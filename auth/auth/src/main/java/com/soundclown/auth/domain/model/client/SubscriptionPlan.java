@@ -1,6 +1,7 @@
 package com.soundclown.auth.domain.model.client;
 
 import com.soundclown.auth.domain.enums.ClientAuthority;
+import com.soundclown.auth.domain.enums.SubscriptionPlanEnum;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -17,7 +18,8 @@ public class SubscriptionPlan {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String name;
+    @Enumerated(EnumType.STRING)
+    private SubscriptionPlanEnum name;
 
     @Column(precision = 10, scale = 2)
     private BigDecimal price;
@@ -32,18 +34,7 @@ public class SubscriptionPlan {
     private String description;
 
     List<String> getAuthority() {
-        return List.of(
-                mapPlanNameToAuthority().name()
-        );
-    }
-
-    private ClientAuthority mapPlanNameToAuthority() {
-        switch (name.toUpperCase()) {
-            case "PRO": return ClientAuthority.CLIENT_PRO;
-            case "PLUS": return ClientAuthority.CLIENT_PLUS;
-            case "FREE": return ClientAuthority.CLIENT_BASIC;
-            default: return ClientAuthority.CLIENT_BASIC;
-        }
+        return List.of(name.getAuthority().name());
     }
 }
 

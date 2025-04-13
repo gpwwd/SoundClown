@@ -72,7 +72,7 @@ public class RegisterService implements ClientRegisterUseCase {
     private Client createClient(Username username, Email email,
                                 PhoneNumber phoneNumber, RawPassword password) {
         SubscriptionPlan subscriptionPlan = subscriptionPlanRepository
-                .findByName(SubscriptionPlanEnum.FREE.name())
+                .findByName(SubscriptionPlanEnum.FREE)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Subscription plan not found: " + SubscriptionPlanEnum.FREE.name()));
 

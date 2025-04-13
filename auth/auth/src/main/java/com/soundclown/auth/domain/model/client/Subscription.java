@@ -51,8 +51,12 @@ class Subscription {
             throw new IllegalArgumentException("Plan or Client cannot be null.");
         }
 
-        int durationDays = plan.getDurationDays();
-        LocalDateTime endDate = LocalDateTime.now().plusDays(durationDays);
+        LocalDateTime endDate;
+        if (plan.getDurationDays() > 0) {
+            endDate = LocalDateTime.now().plusDays(plan.getDurationDays());
+        } else {
+            endDate = null;
+        }
 
         Subscription subscription = new Subscription();
         subscription.setClient(client);

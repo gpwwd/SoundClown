@@ -8,6 +8,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @Configuration
 @PropertySource("classpath:application-auth.properties")
 @EnableJpaRepositories(basePackages = "com.soundclown.auth.application.repository")
-@EntityScan(basePackages = "com.soundclown.auth.domain.model")
+@EntityScan(basePackages = "com.soundclown.auth.domain")
 public class AuthModuleConfig {
 }
