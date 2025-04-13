@@ -1,4 +1,4 @@
-package com.soundclown.auth.application.dto.request;
+package com.soundclown.auth.application.dto.request.register.client;
 
 import jakarta.validation.constraints.NotNull;
 

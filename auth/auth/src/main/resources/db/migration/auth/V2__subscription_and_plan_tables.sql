@@ -18,11 +18,6 @@ CREATE TABLE subscription (
       canceled_at       TIMESTAMP
 );
 
--- Уникальная активная подписка на клиента
-CREATE UNIQUE INDEX uq_active_subscription_per_client
-    ON subscription (client_id)
-    WHERE is_active = true;
-
 -- Наполнение таблицы тарифов дефолтными значениями
 INSERT INTO subscription_plan(name, price, duration_days, description)
 VALUES

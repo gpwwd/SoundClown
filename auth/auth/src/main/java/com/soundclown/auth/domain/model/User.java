@@ -1,6 +1,5 @@
 package com.soundclown.auth.domain.model;
 
-
 import com.soundclown.auth.domain.contracts.PasswordHasher;
 import com.soundclown.auth.domain.valueobject.Email;
 import com.soundclown.auth.domain.valueobject.PhoneNumber;

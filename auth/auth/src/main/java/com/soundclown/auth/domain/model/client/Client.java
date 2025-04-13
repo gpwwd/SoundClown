@@ -1,5 +1,6 @@
 package com.soundclown.auth.domain.model.client;
 
+import com.soundclown.auth.application.dto.response.SubscriptionResponse;
 import com.soundclown.auth.domain.contracts.PasswordHasher;
 import com.soundclown.auth.domain.enums.ClientAuthority;
 import com.soundclown.auth.domain.model.User;
@@ -25,7 +26,7 @@ public class Client extends User {
 
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL,
             orphanRemoval = true, fetch = FetchType.EAGER)
-    private List<Subscription> subscriptions = new ArrayList<>();;
+    private List<Subscription> subscriptions = new ArrayList<>();
 
     @Override
     public List<String> getAuthorities() {
@@ -41,13 +42,26 @@ public class Client extends User {
             SubscriptionPlan plan) {
         super(id, username, email, phoneNumber, passwordHash);
 
-        Subscription subscription = createSubscription(plan);
+        addSubscription(plan);
     }
 
     private Optional<Subscription> getActiveSubscription() {
         return subscriptions.stream()
                 .filter(Subscription::isActive)
                 .findFirst();
+    }
+
+    public SubscriptionResponse getActiveSubscriptionResponse() {
+        return getActiveSubscription()
+                .map(sub -> new SubscriptionResponse(
+                        sub.getId(),
+                        sub.getPlan().getName(),
+                        sub.getStartDate(),
+                        sub.getEndDate(),
+                        sub.getPlan().getPrice(),
+                        sub.getPlan().getDescription()
+                ))
+                .orElseThrow(() -> new IllegalStateException("No active subscription"));
     }
 
     public static Client createWithEmail(
@@ -93,9 +107,22 @@ public class Client extends User {
                 .plan(plan);
     }
 
-    public Subscription createSubscription(SubscriptionPlan plan) {
+    public Subscription addSubscription(SubscriptionPlan plan) {
+        getActiveSubscription().ifPresent(Subscription::deactivate);
+
         Subscription subscription = Subscription.createSubscription(plan, this);
         this.subscriptions.add(subscription);
         return subscription;
+    }
+
+    public void deactivateSubscription(SubscriptionPlan freeFallbackPlan) {
+        getActiveSubscription().ifPresent(Subscription::deactivate);
+        addSubscription(freeFallbackPlan);
+    }
+
+    private boolean hasActivePaidSubscription() {
+        return getActiveSubscription()
+                .map(sub -> !sub.getPlan().isFree())
+                .orElse(false);
     }
 }

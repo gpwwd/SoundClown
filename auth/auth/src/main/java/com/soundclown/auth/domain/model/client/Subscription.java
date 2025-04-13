@@ -1,5 +1,6 @@
 package com.soundclown.auth.domain.model.client;
 
+import com.soundclown.auth.domain.enums.SubscriptionPlanEnum;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -8,12 +9,12 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static lombok.AccessLevel.PRIVATE;
-import static lombok.AccessLevel.PROTECTED;
+import static lombok.AccessLevel.*;
 
 @Entity
 @Table(name = "subscription", schema = "auth")
-@Setter(PRIVATE)
+@Setter(PACKAGE)
+@Getter(PACKAGE)
 @NoArgsConstructor(access = PROTECTED)
 class Subscription {
 
@@ -27,6 +28,7 @@ class Subscription {
 
     @ManyToOne
     @JoinColumn(name = "plan_id", nullable = false)
+    @Getter
     private SubscriptionPlan plan;
 
     @Column(name = "start_date", nullable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
@@ -66,5 +68,10 @@ class Subscription {
         subscription.setEndDate(endDate);
         subscription.setCanceledAt(null);
         return subscription;
+    }
+
+    public void deactivate() {
+        this.setActive(false);
+        this.setCanceledAt(LocalDateTime.now());
     }
 }

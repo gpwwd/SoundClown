@@ -1,4 +1,4 @@
-package com.soundclown.auth.application.service;
+package com.soundclown.auth.application.service.util;
 
 import com.soundclown.auth.application.exception.AlreadyTakenException;
 import org.springframework.stereotype.Component;
