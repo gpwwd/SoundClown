@@ -1,6 +1,5 @@
 package com.soundclown.auth.domain.model.client;
 
-import com.soundclown.auth.domain.enums.ClientAuthority;
 import com.soundclown.auth.domain.enums.SubscriptionPlanEnum;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

@@ -120,6 +120,7 @@ public class Client extends User {
         addSubscription(freeFallbackPlan);
     }
 
+    @SuppressWarnings("unused")
     private boolean hasActivePaidSubscription() {
         return getActiveSubscription()
                 .map(sub -> !sub.getPlan().isFree())

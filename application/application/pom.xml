@@ -73,6 +73,12 @@
 			<artifactId>auth</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+
+		<dependency>
+			<groupId>com.soundclown</groupId>
+			<artifactId>common</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 		<!--Modules-->
 
 	</dependencies>
