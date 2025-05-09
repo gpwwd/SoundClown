@@ -2,72 +2,54 @@ package com.soundclown.track.application.service;
 
 import com.soundclown.track.application.dto.request.artist.CreateArtistRequest;
 import com.soundclown.track.application.dto.request.artist.UpdateArtistRequest;
-import com.soundclown.track.application.dto.response.artist.ArtistResponse;
-import com.soundclown.track.application.dto.response.genre.GenreResponse;
+import com.soundclown.track.application.dto.response.ArtistResponse;
+import com.soundclown.track.application.mapper.ArtistMapper;
 import com.soundclown.track.application.repository.ArtistRepository;
 import com.soundclown.track.application.repository.GenreRepository;
-import com.soundclown.track.application.usecase.artist.ArtistUseCase;
+import com.soundclown.track.application.usecase.ArtistUseCase;
 import com.soundclown.track.domain.model.Artist;
 import com.soundclown.track.domain.model.Genre;
-import com.soundclown.track.domain.valueobject.Description;
-import com.soundclown.track.domain.valueobject.Name;
-
+import com.soundclown.track.domain.service.ArtistNameUniquenessChecker;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class ArtistService implements ArtistUseCase {
 
     private final ArtistRepository artistRepository;
     private final GenreRepository genreRepository;
+    private final ArtistNameUniquenessChecker uniquenessChecker;
+    private final ArtistMapper artistMapper;
 
-    public ArtistService(ArtistRepository artistRepository, GenreRepository genreRepository) {
-        this.artistRepository = artistRepository;
-        this.genreRepository = genreRepository;
+    @Override
+    @Transactional
+    public ArtistResponse createArtist(CreateArtistRequest request, Long userId) {
+        if (artistRepository.existsByUserId(userId)) {
+            throw new IllegalArgumentException("User already has an artist profile");
+        }
+
+        Artist artist = Artist.create(userId, request.name(), request.description(), uniquenessChecker);
+        Artist saved = artistRepository.save(artist);
+        
+        return artistMapper.toResponse(saved);
     }
 
     @Override
     @Transactional
-    public ArtistResponse createArtist(CreateArtistRequest request) {
-        Name name = new Name(request.name());
-        Description description = new Description(request.description());
+    public ArtistResponse updateArtist(Long userId, UpdateArtistRequest request) {
+        Artist artist = artistRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Artist not found for user with id: " + userId));
         
-        // Проверка на дублирование имени
-        if (artistRepository.existsByName(name)) {
-            throw new IllegalArgumentException("Artist with name '" + name.getValue() + "' already exists");
-        }
-        
-        Artist artist = Artist.create(name, description);
+        artist.update(request.name(), request.description(), uniquenessChecker);
         Artist saved = artistRepository.save(artist);
         
-        return mapToResponse(saved);
-    }
-
-    @Override
-    @Transactional
-    public ArtistResponse updateArtist(Long id, UpdateArtistRequest request) {
-        Artist artist = artistRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Artist not found with id: " + id));
-        
-        Name name = new Name(request.name());
-        Description description = new Description(request.description());
-        
-        // Проверка на дублирование имени
-        if (!artist.getName().getValue().equals(name.getValue()) && 
-                artistRepository.existsByName(name)) {
-            throw new IllegalArgumentException("Artist with name '" + name.getValue() + "' already exists");
-        }
-        
-        artist.updateName(name);
-        artist.updateDescription(description);
-        Artist saved = artistRepository.save(artist);
-        
-        return mapToResponse(saved);
+        return artistMapper.toResponse(saved);
     }
 
     @Override
@@ -76,14 +58,14 @@ public class ArtistService implements ArtistUseCase {
         Artist artist = artistRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Artist not found with id: " + id));
         
-        return mapToResponse(artist);
+        return artistMapper.toResponse(artist);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ArtistResponse> getAllArtists() {
         return artistRepository.findAll().stream()
-                .map(this::mapToResponse)
+                .map(artistMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
@@ -120,18 +102,5 @@ public class ArtistService implements ArtistUseCase {
         
         artist.removeGenre(genre);
         artistRepository.save(artist);
-    }
-    
-    private ArtistResponse mapToResponse(Artist artist) {
-        List<GenreResponse> genreResponses = artist.getGenres().stream()
-                .map(genre -> new GenreResponse(genre.getId(), genre.getName().getValue()))
-                .collect(Collectors.toList());
-        
-        return new ArtistResponse(
-                artist.getId(),
-                artist.getName().getValue(),
-                artist.getDescription() != null ? artist.getDescription().getValue() : null,
-                genreResponses
-        );
     }
 } 

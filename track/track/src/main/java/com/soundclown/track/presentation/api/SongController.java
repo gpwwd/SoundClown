@@ -2,8 +2,9 @@ package com.soundclown.track.presentation.api;
 
 import com.soundclown.track.application.dto.request.song.CreateSongRequest;
 import com.soundclown.track.application.dto.request.song.UpdateSongRequest;
-import com.soundclown.track.application.dto.response.song.SongResponse;
-import com.soundclown.track.application.usecase.song.SongUseCase;
+import com.soundclown.track.application.dto.response.SongResponse;
+import com.soundclown.track.application.usecase.SongUseCase;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

@@ -2,11 +2,12 @@ package com.soundclown.track.application.service;
 
 import com.soundclown.track.application.dto.request.genre.CreateGenreRequest;
 import com.soundclown.track.application.dto.request.genre.UpdateGenreRequest;
-import com.soundclown.track.application.dto.response.genre.GenreResponse;
+import com.soundclown.track.application.dto.response.GenreResponse;
+import com.soundclown.track.application.mapper.GenreMapper;
 import com.soundclown.track.application.repository.GenreRepository;
-import com.soundclown.track.application.usecase.genre.GenreUseCase;
+import com.soundclown.track.application.usecase.GenreUseCase;
 import com.soundclown.track.domain.model.Genre;
-import com.soundclown.track.domain.valueobject.Name;
+import com.soundclown.track.domain.service.GenreNameUniquenessChecker;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
@@ -19,25 +20,26 @@ import java.util.stream.Collectors;
 public class GenreService implements GenreUseCase {
 
     private final GenreRepository genreRepository;
+    private final GenreNameUniquenessChecker uniquenessChecker;
+    private final GenreMapper genreMapper;
 
-    public GenreService(GenreRepository genreRepository) {
+    public GenreService(
+            GenreRepository genreRepository, 
+            GenreNameUniquenessChecker uniquenessChecker,
+            GenreMapper genreMapper
+    ) {
         this.genreRepository = genreRepository;
+        this.uniquenessChecker = uniquenessChecker;
+        this.genreMapper = genreMapper;
     }
 
     @Override
     @Transactional
     public GenreResponse createGenre(CreateGenreRequest request) {
-        Name name = new Name(request.name());
-        
-        // Проверка на дублирование имени
-        if (genreRepository.existsByName(name)) {
-            throw new IllegalArgumentException("Genre with name '" + name.getValue() + "' already exists");
-        }
-        
-        Genre genre = Genre.create(name);
+        Genre genre = Genre.create(request.name(), uniquenessChecker);
         Genre saved = genreRepository.save(genre);
         
-        return mapToResponse(saved);
+        return genreMapper.toResponse(saved);
     }
 
     @Override
@@ -46,18 +48,10 @@ public class GenreService implements GenreUseCase {
         Genre genre = genreRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Genre not found with id: " + id));
         
-        Name name = new Name(request.name());
-        
-        // Проверка на дублирование имени
-        if (!genre.getName().getValue().equals(name.getValue()) && 
-                genreRepository.existsByName(name)) {
-            throw new IllegalArgumentException("Genre with name '" + name.getValue() + "' already exists");
-        }
-        
-        genre.updateName(name);
+        genre.updateName(request.name(), uniquenessChecker);
         Genre saved = genreRepository.save(genre);
         
-        return mapToResponse(saved);
+        return genreMapper.toResponse(saved);
     }
 
     @Override
@@ -66,14 +60,14 @@ public class GenreService implements GenreUseCase {
         Genre genre = genreRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Genre not found with id: " + id));
         
-        return mapToResponse(genre);
+        return genreMapper.toResponse(genre);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<GenreResponse> getAllGenres() {
         return genreRepository.findAll().stream()
-                .map(this::mapToResponse)
+                .map(genreMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
@@ -84,12 +78,5 @@ public class GenreService implements GenreUseCase {
                 .orElseThrow(() -> new EntityNotFoundException("Genre not found with id: " + id));
         
         genreRepository.delete(genre);
-    }
-    
-    private GenreResponse mapToResponse(Genre genre) {
-        return new GenreResponse(
-                genre.getId(),
-                genre.getName().getValue()
-        );
     }
 } 

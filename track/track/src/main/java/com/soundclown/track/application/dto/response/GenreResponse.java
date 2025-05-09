@@ -1,4 +1,4 @@
-package com.soundclown.track.application.dto.response.genre;
+package com.soundclown.track.application.dto.response;
 
 public record GenreResponse(
     Long id,

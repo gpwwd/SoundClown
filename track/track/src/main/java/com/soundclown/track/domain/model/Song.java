@@ -1,16 +1,18 @@
 package com.soundclown.track.domain.model;
 
+import com.soundclown.track.domain.service.GenreLoader;
 import com.soundclown.track.domain.valueobject.Duration;
 import com.soundclown.track.domain.valueobject.Title;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Collection;
+import java.util.List;
 
 @Entity
 @Table(name = "songs", schema = "track")
@@ -41,15 +43,13 @@ public class Song {
     private String lyrics;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "album_id")
+    @JoinColumn(name = "album_id", nullable = false)
     @Getter
-    @Setter
     private Album album;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "artist_id")
+    @JoinColumn(name = "artist_id", nullable = false)
     @Getter
-    @Setter
     private Artist artist;
     
     @ManyToMany
@@ -72,40 +72,65 @@ public class Song {
         song.album = album;
         song.artist = artist;
         
-        if (album != null) {
-            album.getSongs().add(song);
-        }
-        
-        if (artist != null) {
-            artist.getSongs().add(song);
-        }
+        album.addSong(song);
+        artist.addSong(song);
         
         return song;
     }
     
-    public void updateTitle(Title title) {
+    public void update(
+            Title title,
+            Duration duration,
+            LocalDate releaseDate,
+            String lyrics
+    ) {
         this.title = title;
-    }
-    
-    public void updateDuration(Duration duration) {
         this.duration = duration;
-    }
-    
-    public void updateReleaseDate(LocalDate releaseDate) {
         this.releaseDate = releaseDate;
-    }
-    
-    public void updateLyrics(String lyrics) {
         this.lyrics = lyrics;
     }
     
-    // Методы для работы с коллекциями
-    
-    public void addGenre(Genre genre) {
-        genres.add(genre);
+    public void updateGenres(Collection<Long> genreIds, GenreLoader genreLoader) {
+        if (genreIds == null) {
+            return;
+        }
+        
+        List<Genre> newGenres = genreLoader.loadGenres(genreIds);
+        new HashSet<>(this.genres).forEach(this::removeGenre);
+        newGenres.forEach(this::addGenre);
     }
     
-    public void removeGenre(Genre genre) {
-        genres.remove(genre);
+    public void addGenreById(Long genreId, GenreLoader genreLoader) {
+        if (genreId == null) {
+            return;
+        }
+        
+        List<Genre> loadedGenres = genreLoader.loadGenres(List.of(genreId));
+        if (!loadedGenres.isEmpty()) {
+            addGenre(loadedGenres.get(0));
+        }
+    }
+    
+    public void removeGenreById(Long genreId, GenreLoader genreLoader) {
+        if (genreId == null) {
+            return;
+        }
+        
+        List<Genre> loadedGenres = genreLoader.loadGenres(List.of(genreId));
+        if (!loadedGenres.isEmpty()) {
+            removeGenre(loadedGenres.get(0));
+        }
+    }
+    
+    private void addGenre(Genre genre) {
+        if (genre != null) {
+            genres.add(genre);
+        }
+    }
+    
+    private void removeGenre(Genre genre) {
+        if (genre != null) {
+            genres.remove(genre);
+        }
     }
 } 

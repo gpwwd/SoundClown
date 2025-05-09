@@ -21,6 +21,7 @@ public record CreateSongRequest(
     
     String lyrics,
     
+    @NotNull(message = "Album ID cannot be null")
     Long albumId,
     
     @NotNull(message = "Artist ID cannot be null")

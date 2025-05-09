@@ -1,6 +1,7 @@
 package com.soundclown.track.domain.model;
 
 import com.soundclown.track.domain.valueobject.Name;
+import com.soundclown.track.domain.service.GenreNameUniquenessChecker;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -33,17 +34,29 @@ public class Genre {
     @ManyToMany(mappedBy = "genres")
     private Set<Song> songs = new HashSet<>();
     
-    public static Genre create(Name name) {
-        Genre genre = new Genre();
-        genre.name = name;
-        return genre;
-    }
-    
-    public void updateName(Name name) {
+    private Genre(Name name) {
         this.name = name;
     }
     
-    // Вспомогательные методы для работы с коллекциями
+    public static Genre create(String nameStr, GenreNameUniquenessChecker uniquenessChecker) {
+        Name name = new Name(nameStr);
+        
+        if (!uniquenessChecker.isNameUnique(name)) {
+            throw new IllegalArgumentException("Genre with name '" + name.getValue() + "' already exists");
+        }
+        
+        return new Genre(name);
+    }
+    
+    public void updateName(String nameStr, GenreNameUniquenessChecker uniquenessChecker) {
+        Name newName = new Name(nameStr);
+        
+        if (!uniquenessChecker.isNameUnique(newName)) {
+            throw new IllegalArgumentException("Genre with name '" + newName.getValue() + "' already exists");
+        }
+        
+        this.name = newName;
+    }
     
     public void addArtist(Artist artist) {
         artists.add(artist);

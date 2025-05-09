@@ -1,14 +1,14 @@
-package com.soundclown.track.application.usecase.artist;
+package com.soundclown.track.application.usecase;
 
 import com.soundclown.track.application.dto.request.artist.CreateArtistRequest;
 import com.soundclown.track.application.dto.request.artist.UpdateArtistRequest;
-import com.soundclown.track.application.dto.response.artist.ArtistResponse;
+import com.soundclown.track.application.dto.response.ArtistResponse;
 
 import java.util.List;
 
 public interface ArtistUseCase {
-    ArtistResponse createArtist(CreateArtistRequest request);
-    ArtistResponse updateArtist(Long id, UpdateArtistRequest request);
+    ArtistResponse createArtist(CreateArtistRequest request, Long userId);
+    ArtistResponse updateArtist(Long userId, UpdateArtistRequest request);
     ArtistResponse getArtistById(Long id);
     List<ArtistResponse> getAllArtists();
     void deleteArtist(Long id);

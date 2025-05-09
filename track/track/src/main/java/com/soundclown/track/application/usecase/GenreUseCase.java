@@ -1,8 +1,8 @@
-package com.soundclown.track.application.usecase.genre;
+package com.soundclown.track.application.usecase;
 
 import com.soundclown.track.application.dto.request.genre.CreateGenreRequest;
 import com.soundclown.track.application.dto.request.genre.UpdateGenreRequest;
-import com.soundclown.track.application.dto.response.genre.GenreResponse;
+import com.soundclown.track.application.dto.response.GenreResponse;
 
 import java.util.List;
 

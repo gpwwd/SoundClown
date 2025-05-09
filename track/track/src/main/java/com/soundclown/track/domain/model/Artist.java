@@ -1,5 +1,6 @@
 package com.soundclown.track.domain.model;
 
+import com.soundclown.track.domain.service.ArtistNameUniquenessChecker;
 import com.soundclown.track.domain.valueobject.Description;
 import com.soundclown.track.domain.valueobject.Name;
 import jakarta.persistence.*;
@@ -22,22 +23,22 @@ public class Artist {
     @Getter
     private Long id;
     
+    @Column(name = "user_id", nullable = false, unique = true)
+    @Getter(AccessLevel.PACKAGE)
+    private Long userId;
+    
     @Embedded
     @AttributeOverride(name = "value", column = @Column(name = "name"))
-    @Getter
     private Name name;
     
     @Embedded
     @AttributeOverride(name = "value", column = @Column(name = "description"))
-    @Getter
     private Description description;
     
     @OneToMany(mappedBy = "artist", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Getter
     private List<Album> albums = new ArrayList<>();
     
     @OneToMany(mappedBy = "artist", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Getter
     private List<Song> songs = new ArrayList<>();
     
     @ManyToMany
@@ -47,25 +48,51 @@ public class Artist {
         joinColumns = @JoinColumn(name = "artist_id"),
         inverseJoinColumns = @JoinColumn(name = "genre_id")
     )
-    @Getter
     private Set<Genre> genres = new HashSet<>();
     
-    public static Artist create(Name name, Description description) {
-        Artist artist = new Artist();
-        artist.name = name;
-        artist.description = description;
-        return artist;
-    }
-    
-    public void updateName(Name name) {
+    private Artist(Long userId, Name name, Description description) {
+        this.userId = userId;
         this.name = name;
-    }
-    
-    public void updateDescription(Description description) {
         this.description = description;
     }
     
-    // Методы для работы с коллекциями
+    public static Artist create(Long userId, String nameStr, String descriptionStr, ArtistNameUniquenessChecker uniquenessChecker) {
+        Name name = new Name(nameStr);
+        
+        if (!uniquenessChecker.isNameUnique(name)) {
+            throw new IllegalArgumentException("Artist with name '" + nameStr + "' already exists");
+        }
+        
+        Description description = new Description(descriptionStr);
+        return new Artist(userId, name, description);
+    }
+    
+    public void update(String nameStr, String descriptionStr, ArtistNameUniquenessChecker uniquenessChecker) {
+        Name newName = new Name(nameStr);
+        
+        if (!uniquenessChecker.isNameUnique(newName)) {
+            throw new IllegalArgumentException("Artist name '" + nameStr + "' is already taken");
+        }
+        
+        this.name = newName;
+        this.description = new Description(descriptionStr);
+    }
+    
+    public String getName() {
+        return name.getValue();
+    }
+    
+    public String getDescription() {
+        return description != null ? description.getValue() : null;
+    }
+    
+    public boolean belongsToUser(Long userId) {
+        return this.userId.equals(userId);
+    }
+    
+    public Set<Genre> getGenres() {
+        return new HashSet<>(genres);
+    }
     
     public void addAlbum(Album album) {
         albums.add(album);
@@ -79,12 +106,10 @@ public class Artist {
     
     public void addSong(Song song) {
         songs.add(song);
-        song.setArtist(this);
     }
     
     public void removeSong(Song song) {
         songs.remove(song);
-        song.setArtist(null);
     }
     
     public void addGenre(Genre genre) {

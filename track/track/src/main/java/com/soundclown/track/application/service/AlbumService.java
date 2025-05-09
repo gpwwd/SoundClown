@@ -2,94 +2,85 @@ package com.soundclown.track.application.service;
 
 import com.soundclown.track.application.dto.request.album.CreateAlbumRequest;
 import com.soundclown.track.application.dto.request.album.UpdateAlbumRequest;
-import com.soundclown.track.application.dto.response.album.AlbumResponse;
-import com.soundclown.track.application.dto.response.artist.ArtistResponse;
-import com.soundclown.track.application.dto.response.genre.GenreResponse;
+import com.soundclown.track.application.dto.response.AlbumResponse;
+import com.soundclown.track.application.mapper.AlbumMapper;
 import com.soundclown.track.application.repository.AlbumRepository;
 import com.soundclown.track.application.repository.ArtistRepository;
-import com.soundclown.track.application.repository.GenreRepository;
-import com.soundclown.track.application.usecase.album.AlbumUseCase;
+import com.soundclown.track.application.usecase.AlbumUseCase;
 import com.soundclown.track.domain.model.Album;
 import com.soundclown.track.domain.model.Artist;
-import com.soundclown.track.domain.model.Genre;
-import com.soundclown.track.domain.valueobject.Description;
-import com.soundclown.track.domain.valueobject.Title;
+import com.soundclown.track.domain.service.AlbumNameUniquenessChecker;
+import com.soundclown.track.domain.service.GenreLoader;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class AlbumService implements AlbumUseCase {
 
     private final AlbumRepository albumRepository;
     private final ArtistRepository artistRepository;
-    private final GenreRepository genreRepository;
+    private final AlbumNameUniquenessChecker albumNameUniquenessChecker;
+    private final GenreLoader genreLoader;
+    private final AlbumMapper albumMapper;
 
-    public AlbumService(AlbumRepository albumRepository, ArtistRepository artistRepository, GenreRepository genreRepository) {
+    public AlbumService(
+            AlbumRepository albumRepository, 
+            ArtistRepository artistRepository, 
+            AlbumNameUniquenessChecker albumNameUniquenessChecker,
+            GenreLoader genreLoader,
+            AlbumMapper albumMapper) {
         this.albumRepository = albumRepository;
         this.artistRepository = artistRepository;
-        this.genreRepository = genreRepository;
+        this.albumNameUniquenessChecker = albumNameUniquenessChecker;
+        this.genreLoader = genreLoader;
+        this.albumMapper = albumMapper;
     }
 
     @Override
     @Transactional
-    public AlbumResponse createAlbum(CreateAlbumRequest request) {
-        Title title = new Title(request.title());
-        Description description = new Description(request.description());
+    public AlbumResponse createAlbum(CreateAlbumRequest request, Long userId) {
+        Artist artist = artistRepository.findByUserId(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Artist not found for user with id: " + userId));
         
-        Artist artist = artistRepository.findById(request.artistId())
-                .orElseThrow(() -> new EntityNotFoundException("Artist not found with id: " + request.artistId()));
+        Album album = Album.create(
+            request.title(), 
+            request.releaseDate(), 
+            request.description(), 
+            artist,
+            albumNameUniquenessChecker
+        );
         
-        Album album = Album.create(title, request.releaseDate(), description, artist);
-        
-        // Добавляем жанры, если они указаны
-        if (request.genreIds() != null && !request.genreIds().isEmpty()) {
-            for (Long genreId : request.genreIds()) {
-                Genre genre = genreRepository.findById(genreId)
-                        .orElseThrow(() -> new EntityNotFoundException("Genre not found with id: " + genreId));
-                album.addGenre(genre);
-            }
-        }
+        album.updateGenres(request.genreIds(), genreLoader);
         
         Album saved = albumRepository.save(album);
         
-        return mapToResponse(saved);
+        return albumMapper.toResponse(saved);
     }
 
     @Override
     @Transactional
-    public AlbumResponse updateAlbum(Long id, UpdateAlbumRequest request) {
+    public AlbumResponse updateAlbum(Long id, UpdateAlbumRequest request, Long userId) {
         Album album = albumRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Album not found with id: " + id));
+                
+        album.validateAccess(userId);
         
-        Title title = new Title(request.title());
-        Description description = new Description(request.description());
+        album.update(
+            request.title(),
+            request.releaseDate(),
+            request.description(),
+            albumNameUniquenessChecker
+        );
         
-        album.updateTitle(title);
-        album.updateReleaseDate(request.releaseDate());
-        album.updateDescription(description);
-        
-        // Обновляем жанры, если они указаны
-        if (request.genreIds() != null) {
-            // Очищаем существующие жанры
-            new ArrayList<>(album.getGenres()).forEach(album::removeGenre);
-            
-            // Добавляем новые жанры
-            for (Long genreId : request.genreIds()) {
-                Genre genre = genreRepository.findById(genreId)
-                        .orElseThrow(() -> new EntityNotFoundException("Genre not found with id: " + genreId));
-                album.addGenre(genre);
-            }
-        }
+        album.updateGenres(request.genreIds(), genreLoader);
         
         Album saved = albumRepository.save(album);
         
-        return mapToResponse(saved);
+        return albumMapper.toResponse(saved);
     }
 
     @Override
@@ -98,15 +89,13 @@ public class AlbumService implements AlbumUseCase {
         Album album = albumRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Album not found with id: " + id));
         
-        return mapToResponse(album);
+        return albumMapper.toResponse(album);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<AlbumResponse> getAllAlbums() {
-        return albumRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return albumMapper.toResponseList(albumRepository.findAll());
     }
 
     @Override
@@ -115,65 +104,41 @@ public class AlbumService implements AlbumUseCase {
         Artist artist = artistRepository.findById(artistId)
                 .orElseThrow(() -> new EntityNotFoundException("Artist not found with id: " + artistId));
         
-        return albumRepository.findByArtist(artist).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return albumMapper.toResponseList(albumRepository.findByArtist(artist));
     }
 
     @Override
     @Transactional
-    public void deleteAlbum(Long id) {
+    public void deleteAlbum(Long id, Long userId) {
         Album album = albumRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Album not found with id: " + id));
+                
+        album.validateAccess(userId);
         
         albumRepository.delete(album);
     }
 
     @Override
     @Transactional
-    public void addGenreToAlbum(Long albumId, Long genreId) {
+    public void addGenreToAlbum(Long albumId, Long genreId, Long userId) {
         Album album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new EntityNotFoundException("Album not found with id: " + albumId));
+                
+        album.validateAccess(userId);
         
-        Genre genre = genreRepository.findById(genreId)
-                .orElseThrow(() -> new EntityNotFoundException("Genre not found with id: " + genreId));
-        
-        album.addGenre(genre);
+        album.addGenreById(genreId, genreLoader);
         albumRepository.save(album);
     }
 
     @Override
     @Transactional
-    public void removeGenreFromAlbum(Long albumId, Long genreId) {
+    public void removeGenreFromAlbum(Long albumId, Long genreId, Long userId) {
         Album album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new EntityNotFoundException("Album not found with id: " + albumId));
+                
+        album.validateAccess(userId);
         
-        Genre genre = genreRepository.findById(genreId)
-                .orElseThrow(() -> new EntityNotFoundException("Genre not found with id: " + genreId));
-        
-        album.removeGenre(genre);
+        album.removeGenreById(genreId, genreLoader);
         albumRepository.save(album);
-    }
-    
-    private AlbumResponse mapToResponse(Album album) {
-        List<GenreResponse> genreResponses = album.getGenres().stream()
-                .map(genre -> new GenreResponse(genre.getId(), genre.getName().getValue()))
-                .collect(Collectors.toList());
-        
-        ArtistResponse artistResponse = new ArtistResponse(
-                album.getArtist().getId(),
-                album.getArtist().getName().getValue(),
-                album.getArtist().getDescription() != null ? album.getArtist().getDescription().getValue() : null,
-                List.of() // Не включаем жанры артиста, чтобы избежать циклических зависимостей
-        );
-        
-        return new AlbumResponse(
-                album.getId(),
-                album.getTitle().getValue(),
-                album.getReleaseDate(),
-                album.getDescription() != null ? album.getDescription().getValue() : null,
-                artistResponse,
-                genreResponses
-        );
     }
 } 

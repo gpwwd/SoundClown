@@ -6,8 +6,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.Objects;
-
 @Embeddable
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EqualsAndHashCode
@@ -17,7 +15,7 @@ public class Description {
     private String value;
     
     public Description(String value) {
-        this.value = value; // Может быть null или пустым
+        this.value = value; 
     }
     
     @Override

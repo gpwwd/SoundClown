@@ -1,8 +1,8 @@
-package com.soundclown.track.application.usecase.song;
+package com.soundclown.track.application.usecase;
 
 import com.soundclown.track.application.dto.request.song.CreateSongRequest;
 import com.soundclown.track.application.dto.request.song.UpdateSongRequest;
-import com.soundclown.track.application.dto.response.song.SongResponse;
+import com.soundclown.track.application.dto.response.SongResponse;
 
 import java.util.List;
 

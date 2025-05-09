@@ -126,37 +126,7 @@
             <version>${project.version}</version>
         </dependency>
         <!--Common-->
-
-        <!-- Добавляем в секцию зависимостей тестовую базу данных -->
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <!-- Конец добавляемого блока -->
         
-        <!-- Добавляем поддержку Docker Compose для тестов -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-docker-compose</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <!-- Конец добавляемого блока -->
-        
-        <!-- Альтернативный подход - Testcontainers -->
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>postgresql</artifactId>
-            <version>1.19.6</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>1.19.6</version>
-            <scope>test</scope>
-        </dependency>
-        <!-- Конец альтернативного подхода -->
     </dependencies>
 
     <build>
