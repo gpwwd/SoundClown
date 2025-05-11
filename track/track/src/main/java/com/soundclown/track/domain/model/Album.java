@@ -62,7 +62,8 @@ public class Album {
     private Set<Genre> genres = new HashSet<>();
     
     public static Album create(String titleStr, LocalDate releaseDate, String descriptionStr, 
-                              Artist artist, AlbumNameUniquenessChecker uniquenessChecker) {
+                              Artist artist, AlbumNameUniquenessChecker uniquenessChecker,
+                              Collection<Long> genreIds, GenreLoader genreLoader) {
         Title title = new Title(titleStr);
         Description description = new Description(descriptionStr);
         
@@ -77,6 +78,8 @@ public class Album {
         album.artist = artist;
         
         artist.addAlbum(album);
+
+        album.updateGenres(genreIds, genreLoader);
         
         return album;
     }
@@ -87,7 +90,10 @@ public class Album {
         }
     }
     
-    public void update(String titleStr, LocalDate releaseDate, String descriptionStr, AlbumNameUniquenessChecker uniquenessChecker) {
+    public void update(String titleStr, LocalDate releaseDate, String descriptionStr, 
+                      AlbumNameUniquenessChecker uniquenessChecker, Collection<Long> genreIds,
+                      GenreLoader genreLoader) {
+        this.validateAccess(artist.getUserId());
         Title newTitle = new Title(titleStr);
         Description newDescription = new Description(descriptionStr);
         
@@ -98,6 +104,8 @@ public class Album {
         this.title = newTitle;
         this.releaseDate = releaseDate;
         this.description = newDescription;
+
+        updateGenres(genreIds, genreLoader);
     }
 
     public void updateGenres(Collection<Long> genreIds, GenreLoader genreLoader) {
@@ -133,10 +141,22 @@ public class Album {
     }
     
     public void addSong(Song song) {
+        if (songs == null) {
+            songs = new ArrayList<>();
+        }
+        
+        if (songs.contains(song)) {
+            throw new IllegalArgumentException("Song is already in the album");
+        }
+        
         songs.add(song);
+        song.setAlbum(this);
     }
     
     public void removeSong(Song song) {
+        if (!song.getAlbum().equals(this)) {
+            throw new IllegalArgumentException("Song is not in this album");
+        }
         songs.remove(song);
     }
     

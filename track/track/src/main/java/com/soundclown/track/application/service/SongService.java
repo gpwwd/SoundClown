@@ -12,8 +12,6 @@ import com.soundclown.track.domain.model.Album;
 import com.soundclown.track.domain.model.Artist;
 import com.soundclown.track.domain.model.Song;
 import com.soundclown.track.domain.service.GenreLoader;
-import com.soundclown.track.domain.valueobject.Duration;
-import com.soundclown.track.domain.valueobject.Title;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
@@ -45,43 +43,35 @@ public class SongService implements SongUseCase {
 
     @Override
     @Transactional
-    public SongResponse createSong(CreateSongRequest request) {
-        Title title = new Title(request.title());
-        Duration duration = new Duration(request.durationInSeconds());
-        
-        Artist artist = artistRepository.findById(request.artistId())
-                .orElseThrow(() -> new EntityNotFoundException("Artist not found with id: " + request.artistId()));
-        
+    public SongResponse createSong(CreateSongRequest request, Long userId) {
+        Artist artist = artistRepository.findByUserId(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Artist not found for user with id: " + userId));
+
         Album album = albumRepository.findById(request.albumId())
                 .orElseThrow(() -> new EntityNotFoundException("Album not found with id: " + request.albumId()));
-        
-        
-        Song song = Song.create(title, duration, request.releaseDate(), request.lyrics(), album, artist);
-        song.updateGenres(request.genreIds(), genreLoader);
-        
+
+        Song song = Song.create(request.title(), request.durationInSeconds(),
+            request.releaseDate(), request.lyrics(),
+            album, artist, genreLoader, request.genreIds()
+        );
+
         Song saved = songRepository.save(song);
-        
+
         return songMapper.toResponse(saved);
     }
 
     @Override
     @Transactional
-    public SongResponse updateSong(Long id, UpdateSongRequest request) {
+    public SongResponse updateSong(Long id, UpdateSongRequest request, Long userId) {
         Song song = songRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Song not found with id: " + id));
-        
-        Title title = new Title(request.title());
-        Duration duration = new Duration(request.durationInSeconds());
-        
-        song.update(
-            title,
-            duration,
-            request.releaseDate(),
-            request.lyrics()
+
+        song.update(request.title(), request.durationInSeconds(),
+            request.releaseDate(), request.lyrics(),
+            request.genreIds(), genreLoader
         );
         
         Song saved = songRepository.save(song);
-        
         return songMapper.toResponse(saved);
     }
 
@@ -120,30 +110,11 @@ public class SongService implements SongUseCase {
 
     @Override
     @Transactional
-    public void deleteSong(Long id) {
+    public void deleteSong(Long id, Long userId) {
         Song song = songRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Song not found with id: " + id));
         
+        song.validateAccess(userId);
         songRepository.delete(song);
-    }
-
-    @Override
-    @Transactional
-    public void addGenreToSong(Long songId, Long genreId) {
-        Song song = songRepository.findById(songId)
-                .orElseThrow(() -> new EntityNotFoundException("Song not found with id: " + songId));
-        
-        song.addGenreById(genreId, genreLoader);
-        songRepository.save(song);
-    }
-
-    @Override
-    @Transactional
-    public void removeGenreFromSong(Long songId, Long genreId) {
-        Song song = songRepository.findById(songId)
-                .orElseThrow(() -> new EntityNotFoundException("Song not found with id: " + songId));
-        
-        song.removeGenreById(genreId, genreLoader);
-        songRepository.save(song);
     }
 } 

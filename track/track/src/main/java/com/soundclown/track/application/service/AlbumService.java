@@ -6,9 +6,11 @@ import com.soundclown.track.application.dto.response.AlbumResponse;
 import com.soundclown.track.application.mapper.AlbumMapper;
 import com.soundclown.track.application.repository.AlbumRepository;
 import com.soundclown.track.application.repository.ArtistRepository;
+import com.soundclown.track.application.repository.SongRepository;
 import com.soundclown.track.application.usecase.AlbumUseCase;
 import com.soundclown.track.domain.model.Album;
 import com.soundclown.track.domain.model.Artist;
+import com.soundclown.track.domain.model.Song;
 import com.soundclown.track.domain.service.AlbumNameUniquenessChecker;
 import com.soundclown.track.domain.service.GenreLoader;
 
@@ -23,6 +25,7 @@ public class AlbumService implements AlbumUseCase {
 
     private final AlbumRepository albumRepository;
     private final ArtistRepository artistRepository;
+    private final SongRepository songRepository;
     private final AlbumNameUniquenessChecker albumNameUniquenessChecker;
     private final GenreLoader genreLoader;
     private final AlbumMapper albumMapper;
@@ -30,11 +33,13 @@ public class AlbumService implements AlbumUseCase {
     public AlbumService(
             AlbumRepository albumRepository, 
             ArtistRepository artistRepository, 
+            SongRepository songRepository,
             AlbumNameUniquenessChecker albumNameUniquenessChecker,
             GenreLoader genreLoader,
             AlbumMapper albumMapper) {
         this.albumRepository = albumRepository;
         this.artistRepository = artistRepository;
+        this.songRepository = songRepository;
         this.albumNameUniquenessChecker = albumNameUniquenessChecker;
         this.genreLoader = genreLoader;
         this.albumMapper = albumMapper;
@@ -46,15 +51,10 @@ public class AlbumService implements AlbumUseCase {
         Artist artist = artistRepository.findByUserId(userId)
                 .orElseThrow(() -> new EntityNotFoundException("Artist not found for user with id: " + userId));
         
-        Album album = Album.create(
-            request.title(), 
-            request.releaseDate(), 
-            request.description(), 
-            artist,
-            albumNameUniquenessChecker
+        Album album = Album.create(request.title(), request.releaseDate(), 
+            request.description(), artist, albumNameUniquenessChecker, request.genreIds(),
+            genreLoader
         );
-        
-        album.updateGenres(request.genreIds(), genreLoader);
         
         Album saved = albumRepository.save(album);
         
@@ -66,17 +66,9 @@ public class AlbumService implements AlbumUseCase {
     public AlbumResponse updateAlbum(Long id, UpdateAlbumRequest request, Long userId) {
         Album album = albumRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Album not found with id: " + id));
-                
-        album.validateAccess(userId);
         
-        album.update(
-            request.title(),
-            request.releaseDate(),
-            request.description(),
-            albumNameUniquenessChecker
-        );
-        
-        album.updateGenres(request.genreIds(), genreLoader);
+        album.update(request.title(), request.releaseDate(), request.description(),
+            albumNameUniquenessChecker, request.genreIds(), genreLoader);
         
         Album saved = albumRepository.save(album);
         
@@ -123,7 +115,7 @@ public class AlbumService implements AlbumUseCase {
     public void addGenreToAlbum(Long albumId, Long genreId, Long userId) {
         Album album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new EntityNotFoundException("Album not found with id: " + albumId));
-                
+        
         album.validateAccess(userId);
         
         album.addGenreById(genreId, genreLoader);
@@ -135,10 +127,43 @@ public class AlbumService implements AlbumUseCase {
     public void removeGenreFromAlbum(Long albumId, Long genreId, Long userId) {
         Album album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new EntityNotFoundException("Album not found with id: " + albumId));
-                
+        
         album.validateAccess(userId);
         
         album.removeGenreById(genreId, genreLoader);
+        albumRepository.save(album);
+    }
+
+    @Override
+    @Transactional
+    public void addSongToAlbum(Long albumId, Long songId, Long userId) {
+        Album album = albumRepository.findById(albumId)
+                .orElseThrow(() -> new EntityNotFoundException("Album not found with id: " + albumId));
+        
+        Song song = songRepository.findById(songId)
+                .orElseThrow(() -> new EntityNotFoundException("Song not found with id: " + songId));
+        
+        album.validateAccess(userId);
+        song.validateAccess(userId);
+        
+        album.addSong(song);
+        albumRepository.save(album);
+    }
+
+    @Override
+    @Transactional
+    public void removeSongFromAlbum(Long albumId, Long songId, Long userId) {
+        Album album = albumRepository.findById(albumId)
+                .orElseThrow(() -> new EntityNotFoundException("Album not found with id: " + albumId));
+        
+        Song song = songRepository.findById(songId)
+                .orElseThrow(() -> new EntityNotFoundException("Song not found with id: " + songId));
+        
+        album.validateAccess(userId);
+        song.validateAccess(userId);
+        
+        album.removeSong(song);
+        song.setAlbum(null);
         albumRepository.save(album);
     }
 } 

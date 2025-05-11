@@ -10,6 +10,7 @@ public interface ArtistUseCase {
     ArtistResponse createArtist(CreateArtistRequest request, Long userId);
     ArtistResponse updateArtist(Long userId, UpdateArtistRequest request);
     ArtistResponse getArtistById(Long id);
+    ArtistResponse getArtistByUserId(Long userId);
     List<ArtistResponse> getAllArtists();
     void deleteArtist(Long id);
     void addGenreToArtist(Long artistId, Long genreId);

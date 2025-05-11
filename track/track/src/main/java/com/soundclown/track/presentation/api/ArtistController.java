@@ -43,6 +43,13 @@ public class ArtistController {
         return ResponseEntity.ok(artistUseCase.getArtistById(id));
     }
 
+    @GetMapping("/me")
+    @PreAuthorize("hasAnyAuthority('CLIENT_BASIC', 'CLIENT_PLUS', 'CLIENT_PRO')")
+    public ResponseEntity<ArtistResponse> getArtistByUserId(
+            @CurrentUser Long userId) {
+        return ResponseEntity.ok(artistUseCase.getArtistByUserId(userId));
+    }
+
     @GetMapping
     public ResponseEntity<List<ArtistResponse>> getAllArtists() {
         return ResponseEntity.ok(artistUseCase.getAllArtists());

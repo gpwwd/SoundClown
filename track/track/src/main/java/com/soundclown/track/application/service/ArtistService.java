@@ -103,4 +103,12 @@ public class ArtistService implements ArtistUseCase {
         artist.removeGenre(genre);
         artistRepository.save(artist);
     }
+
+    @Override
+    public ArtistResponse getArtistByUserId(Long userId) {
+        Artist artist = artistRepository.findByUserId(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Artist not found for user with id: " + userId));
+        
+        return artistMapper.toResponse(artist);
+    }
 } 

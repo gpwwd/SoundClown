@@ -82,4 +82,24 @@ public class AlbumController {
         albumUseCase.removeGenreFromAlbum(albumId, genreId, userId);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{albumId}/songs/{songId}")
+    @PreAuthorize("hasAnyAuthority('CLIENT_BASIC', 'CLIENT_PLUS', 'CLIENT_PRO')")
+    public ResponseEntity<Void> addSongToAlbum(
+            @PathVariable Long albumId,
+            @PathVariable Long songId,
+            @CurrentUser Long userId) {
+        albumUseCase.addSongToAlbum(albumId, songId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{albumId}/songs/{songId}")
+    @PreAuthorize("hasAnyAuthority('CLIENT_BASIC', 'CLIENT_PLUS', 'CLIENT_PRO')")
+    public ResponseEntity<Void> removeSongFromAlbum(
+            @PathVariable Long albumId,
+            @PathVariable Long songId,
+            @CurrentUser Long userId) {
+        albumUseCase.removeSongFromAlbum(albumId, songId, userId);
+        return ResponseEntity.noContent().build();
+    }
 } 

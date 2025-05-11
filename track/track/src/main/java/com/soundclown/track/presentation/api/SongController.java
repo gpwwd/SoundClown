@@ -4,6 +4,7 @@ import com.soundclown.track.application.dto.request.song.CreateSongRequest;
 import com.soundclown.track.application.dto.request.song.UpdateSongRequest;
 import com.soundclown.track.application.dto.response.SongResponse;
 import com.soundclown.track.application.usecase.SongUseCase;
+import com.soundclown.common.CurrentUser;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,15 +22,18 @@ public class SongController {
     private final SongUseCase songUseCase;
 
     @PostMapping
-    public ResponseEntity<SongResponse> createSong(@Valid @RequestBody CreateSongRequest request) {
-        return new ResponseEntity<>(songUseCase.createSong(request), HttpStatus.CREATED);
+    public ResponseEntity<SongResponse> createSong(
+            @Valid @RequestBody CreateSongRequest request,
+            @CurrentUser Long userId) {
+        return new ResponseEntity<>(songUseCase.createSong(request, userId), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<SongResponse> updateSong(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateSongRequest request) {
-        return ResponseEntity.ok(songUseCase.updateSong(id, request));
+            @Valid @RequestBody UpdateSongRequest request,
+            @CurrentUser Long userId) {
+        return ResponseEntity.ok(songUseCase.updateSong(id, request, userId));
     }
 
     @GetMapping("/{id}")
@@ -53,24 +57,10 @@ public class SongController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSong(@PathVariable Long id) {
-        songUseCase.deleteSong(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/{songId}/genres/{genreId}")
-    public ResponseEntity<Void> addGenreToSong(
-            @PathVariable Long songId, 
-            @PathVariable Long genreId) {
-        songUseCase.addGenreToSong(songId, genreId);
-        return ResponseEntity.noContent().build();
-    }
-
-    @DeleteMapping("/{songId}/genres/{genreId}")
-    public ResponseEntity<Void> removeGenreFromSong(
-            @PathVariable Long songId, 
-            @PathVariable Long genreId) {
-        songUseCase.removeGenreFromSong(songId, genreId);
+    public ResponseEntity<Void> deleteSong(
+            @PathVariable Long id,
+            @CurrentUser Long userId) {
+        songUseCase.deleteSong(id, userId);
         return ResponseEntity.noContent().build();
     }
 } 

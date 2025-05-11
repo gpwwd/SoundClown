@@ -67,8 +67,8 @@ public class Admin extends User{
             Username username, String passwordHash, AdminRole role) {
 
         return Admin.builder()
-                .username(username)
-                .passwordHash(passwordHash)
-                .role(role);
+            .username(username)
+            .passwordHash(passwordHash)
+            .role(role);
     }
 }

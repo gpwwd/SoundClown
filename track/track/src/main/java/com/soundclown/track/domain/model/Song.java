@@ -62,11 +62,14 @@ public class Song {
     @Getter
     private Set<Genre> genres = new HashSet<>();
     
-    public static Song create(Title title, Duration duration, LocalDate releaseDate, 
-                              String lyrics, Album album, Artist artist) {
+    public static Song create(String titleStr, Integer durationInSeconds, LocalDate releaseDate, 
+                              String lyrics, Album album, Artist artist, GenreLoader genreLoader,
+                              Collection<Long> genreIds) {
+        album.validateAccess(artist.getUserId());
+        
         Song song = new Song();
-        song.title = title;
-        song.duration = duration;
+        song.title = new Title(titleStr);
+        song.duration = new Duration(durationInSeconds);
         song.releaseDate = releaseDate;
         song.lyrics = lyrics;
         song.album = album;
@@ -74,20 +77,24 @@ public class Song {
         
         album.addSong(song);
         artist.addSong(song);
-        
+
+        song.updateGenres(genreIds, genreLoader);
+
         return song;
     }
     
-    public void update(
-            Title title,
-            Duration duration,
-            LocalDate releaseDate,
-            String lyrics
-    ) {
-        this.title = title;
-        this.duration = duration;
+    public void update(String titleStr, Integer durationInSeconds,
+                      LocalDate releaseDate, String lyrics,
+                      List<Long> genreIds, GenreLoader genreLoader) {
+        this.validateAccess(artist.getUserId());
+        this.title = new Title(titleStr);
+        this.duration = new Duration(durationInSeconds);
         this.releaseDate = releaseDate;
         this.lyrics = lyrics;
+        
+        if (genreIds != null) {
+            updateGenres(genreIds, genreLoader);
+        }
     }
     
     public void updateGenres(Collection<Long> genreIds, GenreLoader genreLoader) {
@@ -100,28 +107,6 @@ public class Song {
         newGenres.forEach(this::addGenre);
     }
     
-    public void addGenreById(Long genreId, GenreLoader genreLoader) {
-        if (genreId == null) {
-            return;
-        }
-        
-        List<Genre> loadedGenres = genreLoader.loadGenres(List.of(genreId));
-        if (!loadedGenres.isEmpty()) {
-            addGenre(loadedGenres.get(0));
-        }
-    }
-    
-    public void removeGenreById(Long genreId, GenreLoader genreLoader) {
-        if (genreId == null) {
-            return;
-        }
-        
-        List<Genre> loadedGenres = genreLoader.loadGenres(List.of(genreId));
-        if (!loadedGenres.isEmpty()) {
-            removeGenre(loadedGenres.get(0));
-        }
-    }
-    
     private void addGenre(Genre genre) {
         if (genre != null) {
             genres.add(genre);
@@ -132,5 +117,18 @@ public class Song {
         if (genre != null) {
             genres.remove(genre);
         }
+    }
+
+    public void validateAccess(Long userId) {
+        if (!artist.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("You don't have permission to modify this song");
+        }
+    }
+
+    public void setAlbum(Album album) {
+        if (this.album != null && !this.album.equals(album)) {
+            this.album.getSongs().remove(this);
+        }
+        this.album = album;
     }
 } 

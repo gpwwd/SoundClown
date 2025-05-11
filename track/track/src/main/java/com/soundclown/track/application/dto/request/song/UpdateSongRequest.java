@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public record UpdateSongRequest(
     @NotBlank(message = "Song title cannot be blank")
@@ -18,5 +19,7 @@ public record UpdateSongRequest(
     
     LocalDate releaseDate,
     
-    String lyrics
+    String lyrics,
+    
+    List<Long> genreIds
 ) {} 
