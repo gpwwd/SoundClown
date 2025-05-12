@@ -70,6 +70,12 @@
 
 		<dependency>
 			<groupId>com.soundclown</groupId>
+			<artifactId>storage</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.soundclown</groupId>
 			<artifactId>auth</artifactId>
 			<version>${project.version}</version>
 		</dependency>

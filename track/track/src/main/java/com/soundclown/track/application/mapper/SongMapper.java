@@ -12,10 +12,6 @@ import java.util.stream.Collectors;
 public class SongMapper {
 
     public SongResponse toResponse(Song song) {
-        if (song == null) {
-            return null;
-        }
-
         List<Long> genreIds = song.getGenres().stream()
                 .map(Genre::getId)
                 .collect(Collectors.toList());
@@ -34,10 +30,6 @@ public class SongMapper {
     }
 
     public List<SongResponse> toResponseList(List<Song> songs) {
-        if (songs == null) {
-            return List.of();
-        }
-
         return songs.stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());

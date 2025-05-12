@@ -6,7 +6,13 @@ import org.springframework.boot.autoconfigure.flyway.FlywayMigrationStrategy;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-
+import java.util.Set;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.sql.Connection;
+import java.sql.Statement;
+import javax.sql.DataSource;
+import java.sql.SQLException;
 /**
  * A custom {@link FlywayMigrationStrategy} implementation that enables modular and isolated
  * Flyway migrations across multiple schemas with separate migration histories.
@@ -20,15 +26,32 @@ import java.util.List;
 public class FlywayModularMigrationsStrategy implements FlywayMigrationStrategy {
 
     private final List<FluentConfiguration> configurations;
+    private final DataSource dataSource;
 
-    public FlywayModularMigrationsStrategy(List<FluentConfiguration> configurations) {
+    public FlywayModularMigrationsStrategy(List<FluentConfiguration> configurations, DataSource dataSource) {
         this.configurations = configurations;
+        this.dataSource = dataSource;
     }
 
     @Override
     public void migrate(Flyway flyway) {
 
+        Set<String> schemas = configurations.stream()
+                .flatMap(cfg -> Arrays.stream(cfg.getSchemas()))
+                .collect(Collectors.toSet());
+
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+            for (String schema : schemas) {
+                stmt.execute("CREATE SCHEMA IF NOT EXISTS " + schema);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to create schemas", e);
+        }
+
+
         for (var configuration : configurations) {
+            configuration.baselineOnMigrate(true);
             var migration = configuration.load();
 
             migration.migrate();

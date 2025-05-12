@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "songs", schema = "track")
@@ -23,6 +24,9 @@ public class Song {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Getter
     private Long id;
+
+    @Column(name="audio_metadata_id")
+    private UUID audioMetadataId;
     
     @Embedded
     @AttributeOverride(name = "value", column = @Column(name = "title"))
@@ -130,5 +134,13 @@ public class Song {
             this.album.getSongs().remove(this);
         }
         this.album = album;
+    }
+
+    public void setAudioMetadata(UUID audioMetadataId) {
+        this.audioMetadataId = audioMetadataId;
+    }
+
+    public void removeAudioMetadata() {
+        this.audioMetadataId = null;
     }
 } 

@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -22,6 +23,7 @@ public class SongController {
     private final SongUseCase songUseCase;
 
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('CLIENT_BASIC', 'CLIENT_PLUS', 'CLIENT_PRO')")
     public ResponseEntity<SongResponse> createSong(
             @Valid @RequestBody CreateSongRequest request,
             @CurrentUser Long userId) {
@@ -29,6 +31,7 @@ public class SongController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('CLIENT_BASIC', 'CLIENT_PLUS', 'CLIENT_PRO')")
     public ResponseEntity<SongResponse> updateSong(
             @PathVariable Long id,
             @Valid @RequestBody UpdateSongRequest request,
@@ -57,6 +60,7 @@ public class SongController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('CLIENT_BASIC', 'CLIENT_PLUS', 'CLIENT_PRO')")
     public ResponseEntity<Void> deleteSong(
             @PathVariable Long id,
             @CurrentUser Long userId) {
