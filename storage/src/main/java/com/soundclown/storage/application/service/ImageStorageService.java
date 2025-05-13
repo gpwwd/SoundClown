@@ -1,43 +1,38 @@
 package com.soundclown.storage.application.service;
 
 import com.soundclown.storage.application.dto.response.FileUploadResponse;
-import com.soundclown.storage.application.repository.FileMetadataRepository;
+import com.soundclown.storage.application.repository.storage.ArtistImageFileMetadataRepository;
 import com.soundclown.storage.application.usecase.UploadImageFileUseCase;
-import com.soundclown.storage.domain.model.AudioMetadataEntity;
+import com.soundclown.storage.domain.model.ImageMetadataModel;
 import com.soundclown.storage.infrastructure.service.BinaryStoragePort;
-import com.soundclown.storage.infrastructure.service.BinaryStoragePort.StorageBucketType;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class ImageStorageService implements UploadImageFileUseCase {
     
     private final BinaryStoragePort storagePort;
-    private final FileMetadataRepository metadataRepository;
+    private final ArtistImageFileMetadataRepository metadataRepository;
 
     @Override
     @Transactional
     public FileUploadResponse uploadArtistImage(MultipartFile file, Long artistId) {
         try {
-            UUID fileUuid = UUID.randomUUID();
-            
-            AudioMetadataEntity metadata = AudioMetadataEntity.builder()
-                    .id(fileUuid)
-                    .size(file.getSize())
-                    .path(generatePath("artists", file.getOriginalFilename()))
-                    .httpContentType(file.getContentType())
-                    .storageBucketType(StorageBucketType.ARTIST_IMAGE)
-                    .build();
+            ImageMetadataModel metadata = ImageMetadataModel.createForArtistImageUpload(
+                file,file.getOriginalFilename());
 
             metadataRepository.save(metadata);
-            storagePort.save(file, metadata.getPath(), fileUuid, StorageBucketType.ARTIST_IMAGE);
             
-            return new FileUploadResponse(artistId.toString());
+            var storageData = metadata.getStorageData();
+            storagePort.save(file, storageData.path(), storageData.id(), storageData.bucketType());
+            
+            var fileMetadata = metadata.getFileMetadata();
+            return new FileUploadResponse(fileMetadata.id(), fileMetadata.path(),
+                fileMetadata.size(), fileMetadata.contentType(),
+                artistId, storageData.bucketType());
         } catch (Exception e) {
             throw new RuntimeException("Failed to upload artist image", e);
         }
@@ -47,26 +42,20 @@ public class ImageStorageService implements UploadImageFileUseCase {
     @Transactional
     public FileUploadResponse uploadAlbumCover(MultipartFile file, Long albumId) {
         try {
-            UUID fileUuid = UUID.randomUUID();
-            
-            AudioMetadataEntity metadata = AudioMetadataEntity.builder()
-                    .id(fileUuid)
-                    .size(file.getSize())
-                    .path(generatePath("albums", file.getOriginalFilename()))
-                    .httpContentType(file.getContentType())
-                    .storageBucketType(StorageBucketType.ALBUM_COVER)
-                    .build();
+            ImageMetadataModel metadata = ImageMetadataModel.createForAlbumCoverUpload(
+                file, file.getOriginalFilename());
 
             metadataRepository.save(metadata);
-            storagePort.save(file, metadata.getPath(), fileUuid, StorageBucketType.ALBUM_COVER);
             
-            return new FileUploadResponse(albumId.toString());
+            var storageData = metadata.getStorageData();
+            storagePort.save(file, storageData.path(), storageData.id(), storageData.bucketType());
+            
+            var fileMetadata = metadata.getFileMetadata();
+            return new FileUploadResponse(fileMetadata.id(), fileMetadata.path(),
+                fileMetadata.size(), fileMetadata.contentType(),
+                albumId, storageData.bucketType());
         } catch (Exception e) {
             throw new RuntimeException("Failed to upload album cover", e);
         }
-    }
-
-    private String generatePath(String prefix, String originalFilename) {
-        return String.format("%s/%s", prefix, originalFilename);
     }
 } 

@@ -88,6 +88,14 @@
         </dependency>
         <!--Lombok-->
 
+        <!--Common Module-->
+        <dependency>
+            <groupId>com.soundclown</groupId>
+            <artifactId>common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!--Common Module-->
+
         <!--Test-->
         <dependency>
             <groupId>org.springframework.boot</groupId>

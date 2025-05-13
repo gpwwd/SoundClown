@@ -19,6 +19,12 @@ import java.util.UUID;
 @Table(name = "songs", schema = "track")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Song {
+
+    public enum Status {
+        DRAFT,      // Песня создана, но аудио файл еще не загружен
+        ACTIVE,     // Песня полностью готова с аудио файлом
+        DELETED     // Песня удалена
+    }
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,7 +32,13 @@ public class Song {
     private Long id;
 
     @Column(name="audio_metadata_id")
+    @Getter
     private UUID audioMetadataId;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    @Getter
+    private Status status = Status.DRAFT;
     
     @Embedded
     @AttributeOverride(name = "value", column = @Column(name = "title"))
@@ -138,9 +150,15 @@ public class Song {
 
     public void setAudioMetadata(UUID audioMetadataId) {
         this.audioMetadataId = audioMetadataId;
+        this.status = Status.ACTIVE;
     }
 
     public void removeAudioMetadata() {
         this.audioMetadataId = null;
+        this.status = Status.DRAFT;
+    }
+
+    public boolean isPublishable() {
+        return status == Status.ACTIVE && audioMetadataId != null;
     }
 } 

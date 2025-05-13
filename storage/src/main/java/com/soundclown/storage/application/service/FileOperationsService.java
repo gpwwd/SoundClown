@@ -1,9 +1,9 @@
 package com.soundclown.storage.application.service;
 
-import com.soundclown.storage.application.repository.FileMetadataRepository;
+import com.soundclown.storage.application.repository.storage.AudioFileMetadataRepository;
 import com.soundclown.storage.application.usecase.DeleteFileUseCase;
 import com.soundclown.storage.application.usecase.DownloadFileUseCase;
-import com.soundclown.storage.domain.model.AudioMetadataEntity;
+import com.soundclown.storage.domain.model.AudioMetadataModel;
 import com.soundclown.storage.infrastructure.service.BinaryStoragePort;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -19,16 +19,17 @@ import java.util.UUID;
 public class FileOperationsService implements DeleteFileUseCase, DownloadFileUseCase {
     
     private final BinaryStoragePort storagePort;
-    private final FileMetadataRepository metadataRepository;
+    private final AudioFileMetadataRepository metadataRepository;
 
     @Override
     @Transactional
     public void deleteFile(UUID fileUuid) {
-        AudioMetadataEntity metadata = metadataRepository.findById(fileUuid)
+        AudioMetadataModel metadata = metadataRepository.findById(fileUuid)
                 .orElseThrow(() -> new RuntimeException("File not found: " + fileUuid));
         
         try {
-            storagePort.delete(metadata.getPath(), metadata.getId(), metadata.getStorageBucketType());
+            var storageData = metadata.getStorageData();
+            storagePort.delete(storageData.path(), storageData.id(), storageData.bucketType());
             metadataRepository.delete(metadata);
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete file", e);
@@ -37,16 +38,19 @@ public class FileOperationsService implements DeleteFileUseCase, DownloadFileUse
 
     @Override
     public Resource downloadFile(UUID fileUuid) {
-        AudioMetadataEntity metadata = metadataRepository.findById(fileUuid)
+        AudioMetadataModel metadata = metadataRepository.findById(fileUuid)
                 .orElseThrow(() -> new RuntimeException("File not found: " + fileUuid));
 
         try {
+            var storageData = metadata.getStorageData();
+            var fileMetadata = metadata.getFileMetadata();
+            
             InputStream inputStream = storagePort.getInputStream(
-                    metadata.getPath(),
-                    metadata.getId(),
+                    storageData.path(),
+                    storageData.id(),
                     0,
-                    metadata.getSize(),
-                    metadata.getStorageBucketType()
+                    fileMetadata.size(),
+                    storageData.bucketType()
             );
             return new ByteArrayResource(inputStream.readAllBytes());
         } catch (Exception e) {

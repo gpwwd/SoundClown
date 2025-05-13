@@ -1,4 +1,4 @@
-package com.soundclown.storage.application.dto.response;
+package com.soundclown.common.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,17 +7,14 @@ import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
-import com.soundclown.storage.infrastructure.service.BinaryStoragePort.StorageBucketType;
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class FileUploadResponse {
+public class AudioMetadataDto {
     private UUID id;
     private String path;
     private long size;
     private String httpContentType;
     private Long songId;
-    private StorageBucketType storageBucketType;
 } 

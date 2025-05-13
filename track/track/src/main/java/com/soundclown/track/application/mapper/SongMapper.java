@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
+import java.util.HashSet;
 @Component
 public class SongMapper {
 
@@ -16,17 +16,18 @@ public class SongMapper {
                 .map(Genre::getId)
                 .collect(Collectors.toList());
 
-        return new SongResponse(
-                song.getId(),
-                song.getTitle().getValue(),
-                song.getDuration().formatMinutesSeconds(),
-                song.getDuration().getSeconds(),
-                song.getReleaseDate(),
-                song.getLyrics(),
-                song.getAlbum().getId(),
-                song.getArtist().getId(),
-                genreIds
-        );
+        return SongResponse.builder()
+                .id(song.getId())
+                .audioMetadataId(song.getAudioMetadataId())
+                .status(song.getStatus())
+                .title(song.getTitle().getValue())
+                .durationInSeconds(song.getDuration().getSeconds())
+                .releaseDate(song.getReleaseDate())
+                .lyrics(song.getLyrics())
+                .albumId(song.getAlbum().getId())
+                .artistId(song.getArtist().getId())
+                .genreIds(new HashSet<>(genreIds))
+                .build();
     }
 
     public List<SongResponse> toResponseList(List<Song> songs) {

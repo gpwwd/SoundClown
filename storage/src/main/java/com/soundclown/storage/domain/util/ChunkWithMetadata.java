@@ -1,8 +1,8 @@
 package com.soundclown.storage.domain.util;
 
-import com.soundclown.storage.domain.model.AudioMetadataEntity;
+import com.soundclown.storage.domain.model.AudioMetadataModel;
 
 public record ChunkWithMetadata(
-    AudioMetadataEntity metadata,
+    AudioMetadataModel metadata,
     byte[] chunk
 ) {}

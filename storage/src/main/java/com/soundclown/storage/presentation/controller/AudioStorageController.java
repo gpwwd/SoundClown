@@ -1,5 +1,8 @@
 package com.soundclown.storage.presentation.controller;
 
+import com.soundclown.common.event.AudioUploadedEvent;
+import com.soundclown.common.event.EventPublisher;
+import com.soundclown.common.dto.AudioMetadataDto;
 import com.soundclown.storage.application.dto.response.FileUploadResponse;
 import com.soundclown.storage.application.usecase.StreamFileUseCase;
 import com.soundclown.storage.application.usecase.UploadAudioFileUseCase;
@@ -24,6 +27,7 @@ public class AudioStorageController {
 
     private final UploadAudioFileUseCase uploadFileUseCase;
     private final StreamFileUseCase streamFileUseCase;
+    private final EventPublisher eventPublisher;
 
     @Value("${photon.streaming.default-chunk-size}")
     private Integer defaultChunkSize;
@@ -33,8 +37,19 @@ public class AudioStorageController {
     public ResponseEntity<FileUploadResponse> uploadAudioFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam("trackId") Long trackId) {
-        return ResponseEntity.ok(
-                uploadFileUseCase.uploadAudioFile(file, trackId));
+        FileUploadResponse response = uploadFileUseCase.uploadAudioFile(file, trackId);
+        
+        AudioMetadataDto metadataDto = AudioMetadataDto.builder()
+                .id(response.getId())
+                .path(response.getPath())
+                .size(response.getSize())
+                .httpContentType(response.getHttpContentType())
+                .songId(response.getSongId())
+                .build();
+                
+        eventPublisher.publishAudioUploaded(new AudioUploadedEvent(metadataDto));
+        
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/stream/{trackMetadataId}")
@@ -46,12 +61,14 @@ public class AudioStorageController {
         Range parsedRange = Range.parseHttpRangeString(rangeHeader, defaultChunkSize);
         ChunkWithMetadata chunkWithMetadata = streamFileUseCase.fetchChunk(trackMetadataId, parsedRange);
 
+        var fileMetadata = chunkWithMetadata.metadata().getFileMetadata();
+        
         return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
-                .header(HttpHeaders.CONTENT_TYPE, chunkWithMetadata.metadata().getHttpContentType())
+                .header(HttpHeaders.CONTENT_TYPE, fileMetadata.contentType())
                 .header(HttpHeaders.CONTENT_LENGTH, HttpHeadersUtil.
-                        calculateContentLength(parsedRange, chunkWithMetadata.metadata().getSize()))
+                        calculateContentLength(parsedRange, fileMetadata.size()))
                 .header(HttpHeaders.CONTENT_RANGE, HttpHeadersUtil.
-                        constructContentRange(parsedRange, chunkWithMetadata.metadata().getSize()))
+                        constructContentRange(parsedRange, fileMetadata.size()))
                 .body(chunkWithMetadata.chunk());
     }
 } 

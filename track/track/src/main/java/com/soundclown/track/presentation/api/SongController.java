@@ -41,22 +41,38 @@ public class SongController {
 
     @GetMapping("/{id}")
     public ResponseEntity<SongResponse> getSongById(@PathVariable Long id) {
-        return ResponseEntity.ok(songUseCase.getSongById(id));
+        SongResponse song = songUseCase.getSongById(id);
+        if (!song.isPublishable()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(song);
     }
 
     @GetMapping
     public ResponseEntity<List<SongResponse>> getAllSongs() {
-        return ResponseEntity.ok(songUseCase.getAllSongs());
+        return ResponseEntity.ok(
+            songUseCase.getAllSongs().stream()
+                .filter(SongResponse::isPublishable)
+                .toList()
+        );
     }
 
     @GetMapping("/artist/{artistId}")
     public ResponseEntity<List<SongResponse>> getSongsByArtistId(@PathVariable Long artistId) {
-        return ResponseEntity.ok(songUseCase.getSongsByArtistId(artistId));
+        return ResponseEntity.ok(
+            songUseCase.getSongsByArtistId(artistId).stream()
+                .filter(SongResponse::isPublishable)
+                .toList()
+        );
     }
 
     @GetMapping("/album/{albumId}")
     public ResponseEntity<List<SongResponse>> getSongsByAlbumId(@PathVariable Long albumId) {
-        return ResponseEntity.ok(songUseCase.getSongsByAlbumId(albumId));
+        return ResponseEntity.ok(
+            songUseCase.getSongsByAlbumId(albumId).stream()
+                .filter(SongResponse::isPublishable)
+                .toList()
+        );
     }
 
     @DeleteMapping("/{id}")
