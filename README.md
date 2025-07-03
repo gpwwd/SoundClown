@@ -29,11 +29,11 @@ SoundClown is a modern music streaming platform built with Spring Boot that allo
 - **Database**: JPA/Hibernate
 - **Build Tool**: Maven
 - **Containerization**: Docker
-- **Architecture**: Microservices
+- **Architecture**: Modular Monolith with DDD Architecture
 
 ## 📁 Project Structure
 
-The project follows a microservices architecture with the following main modules:
+The project follows a Modular Monolith with DDD architecture with the following main modules:
 
 ### Auth Service
 Handles authentication, authorization, and user management:
